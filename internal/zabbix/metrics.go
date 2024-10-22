@@ -1,12 +1,18 @@
 package zabbix
 
 import (
+	"database/sql"
 	"log"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
+	// Declare the database connection as a global variable
+	db *sql.DB
+
+	// Prometheus metric
 	zabbixMetrics = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "zabbix_metric_name",
@@ -17,31 +23,39 @@ var (
 )
 
 func init() {
+	var err error
+	// Initialize the database connection
+	db, err = connectDB()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	// Register Prometheus metrics
 	prometheus.MustRegister(zabbixMetrics)
 }
 
 func UpdateMetrics() {
-	db, err := connectDB()
+	// Query the list of tables from the database
+	tables, err := db.Query("SHOW TABLES")
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("Failed to query tables: %v", err)
 	}
-	defer db.Close()
+	defer tables.Close()
 
-	// Example query
-	rows, err := db.Query("SELECT some_metric FROM items")
-	if err != nil {
-		log.Fatalf("Failed to query metrics: %v", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var metricValue float64
-		if err := rows.Scan(&metricValue); err != nil {
-			log.Println("Error scanning row:", err)
+	// Loop through all tables and log their names
+	for tables.Next() {
+		var tableName string
+		if err := tables.Scan(&tableName); err != nil {
+			log.Println("Error scanning table name:", err)
 			continue
 		}
 
-		// Update the Prometheus metric
-		zabbixMetrics.WithLabelValues("exampleLabel").Set(metricValue)
+		// Log the table name
+		log.Printf("Table: %s", tableName)
+	}
+
+	// Check for errors from iterating over rows
+	if err := tables.Err(); err != nil {
+		log.Println("Error during iteration over tables:", err)
 	}
 }

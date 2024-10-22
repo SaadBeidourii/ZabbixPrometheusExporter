@@ -12,7 +12,6 @@ import (
 )
 
 func init() {
-	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file")
@@ -33,5 +32,14 @@ func connectDB() (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Test the connection to ensure it is valid
+	if err := db.Ping(); err != nil {
+		return nil, err
+	}
+
+	// Log success message
+	log.Println("Successfully connected to the database")
+
 	return db, nil
 }

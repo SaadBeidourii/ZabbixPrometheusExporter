@@ -13,7 +13,7 @@ func main() {
 	go func() {
 		for {
 			zabbix.UpdateMetrics()
-			time.Sleep(30 * time.Second) // Adjust the scrape interval as needed
+			time.Sleep(30 * time.Second)
 		}
 	}()
 
